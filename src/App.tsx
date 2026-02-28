@@ -206,9 +206,9 @@ const App: React.FC = () => {
             </h1>
 
             <div className={`flex items-center gap-6 mb-10 transition-all duration-1000 ${visibleElements.has('subtitle') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
-              <div className="h-[1px] w-12 bg-amber-700/10"></div>
+              <div className="h-px w-12 bg-amber-700/10"></div>
               <p className="text-amber-700 text-center italic tracking-[0.4em] uppercase text-[10px] md:text-xs font-semibold">Year of the Horse • 2026</p>
-              <div className="h-[1px] w-12 bg-amber-700/10"></div>
+              <div className="h-px w-12 bg-amber-700/10"></div>
             </div>
 
             <div className={`mb-24 transition-all duration-1000 ${visibleElements.has('cta') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
@@ -243,7 +243,7 @@ const App: React.FC = () => {
                         onError={(e) => { (e.target as HTMLImageElement).src = `https://via.placeholder.com/400x400/f8fafc/b45309?text=${cat.name}`; }}
                       />
                     </div>
-                    <h3 className="text-[7px] sm:text-[10px] md:text-xs tracking-[0.1em] sm:tracking-[0.35em] text-slate-500 group-hover:text-amber-700 transition-colors duration-500 uppercase font-bold text-center">
+                    <h3 className="text-[7px] sm:text-[10px] md:text-xs tracking-widest sm:tracking-[0.35em] text-slate-500 group-hover:text-amber-700 transition-colors duration-500 uppercase font-bold text-center">
                       {cat.name}
                     </h3>
                   </div>
@@ -255,7 +255,7 @@ const App: React.FC = () => {
             <div id="about-us" className="w-full max-w-5xl py-20 mb-20 px-6">
               {/* ... About us code ... */}
               <div className="relative group">
-                <div className="absolute -inset-4 bg-gradient-to-r from-amber-700/5 to-blue-500/5 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-1000"></div>
+                <div className="absolute -inset-4 bg-linear-to-r from-amber-700/5 to-blue-500/5 rounded-[3rem] blur-2xl opacity-50 group-hover:opacity-100 transition-opacity duration-1000"></div>
                 <div className="relative backdrop-blur-xl bg-white/40 border border-white/60 rounded-[3rem] p-10 md:p-16 shadow-2xl shadow-black/5 overflow-hidden">
                   <div className="text-right" dir="rtl">
                     <h2 className="text-3xl md:text-4xl text-slate-800 mb-8 tracking-wide font-medium border-r-4 border-amber-700 pr-6">حول Bagua Vibes</h2>
@@ -273,14 +273,14 @@ const App: React.FC = () => {
              <div id="offer" className={`w-full max-w-4xl mb-32 transition-all duration-1000 ${visibleElements.has('offer') ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'}`}>
               <div className="rounded-[2.5rem] p-10 md:p-14 text-center border-l-4 border-l-amber-700 backdrop-blur-md bg-white/40">
                 <h2 className="text-2xl md:text-4xl mb-4 text-slate-800 tracking-wider font-medium">5% SANCTUARY DISCOUNT</h2>
-                <p className="text-slate-500 text-sm italic tracking-widest font-medium">Code: <span className="text-amber-700 font-bold tracking-[0.1em]">HORSE26</span></p>
+                <p className="text-slate-500 text-sm italic tracking-widest font-medium">Code: <span className="text-amber-700 font-bold tracking-widest">HORSE26</span></p>
               </div>
             </div>
 
             <div id="horse-theme" className="w-full max-w-5xl mb-40">
-              <div className="relative overflow-hidden rounded-[3rem] aspect-[16/10] md:aspect-[21/9] shadow-2xl bg-red-900">
+              <div className="relative overflow-hidden rounded-[3rem] aspect-16/10 md:aspect-21/9 shadow-2xl bg-red-900">
                 <img src={('/bagualanding.jpeg')} alt="China Horse of the New Year" className="w-full h-full object-cover opacity-90" style={{ animation: 'zoomSlow 15s ease-in-out infinite alternate' }} />
-                <div className="absolute inset-0 bg-gradient-to-t from-red-700/60 via-red-700/10 to-transparent mix-blend-multiply"></div>
+                <div className="absolute inset-0 bg-linear-to-t from-red-700/60 via-red-700/10 to-transparent mix-blend-multiply"></div>
                 <div className="absolute inset-0 ring-2 ring-inset ring-red-700/20 pointer-events-none"></div>
               </div>
             </div>

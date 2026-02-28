@@ -110,12 +110,19 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   const filteredProducts = products.filter(p => {
     const price = p.price ? parseFloat(p.price) : 0;
     return price <= maxPrice;
-  });
+  })
+  .sort((a, b) => {
+      // This forces WooCommerce "Starred" (Featured) products to the top
+      if (a.featured && !b.featured) return -1;
+      if (!a.featured && b.featured) return 1;
+      return 0;
+    });
 
   const indexOfLastProduct = currentPage * productsPerPage;
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'whish'>('cod');
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -166,12 +173,16 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       `• ${item.name} (Qty: ${item.quantity}) - $${(Number(item.price) * item.quantity).toFixed(2)}`
     ).join('%0A');
 
+    const paymentText = paymentMethod === 'whish' ? 'Whish Money 🔴' : 'Cash on Delivery 💵';
+
     const message = 
       `✨ *New Order from Bagua Vibes* ✨%0A%0A` +
       `👤 *Customer:* ${customerInfo.name}%0A` +
-      `📍 *Address:* ${customerInfo.address}%0A%0A` +
+      `📍 *Address:* ${customerInfo.address}%0A` +
+      `💳 *Payment:* ${paymentText}%0A%0A` +
       `🛍️ *Items:*%0A${itemsList}%0A%0A` +
-      `💳 *Total:* $${totalPrice.toFixed(2)}%0A%0A` +
+      `💰 *Total:* $${totalPrice.toFixed(2)}%0A%0A` +
+      (paymentMethod === 'whish' ? `_I will send the Whish Money transfer receipt shortly!_%0A` : '') +
       `Please confirm my order!`;
 
     const whatsappNumber = "9613953615";
@@ -204,7 +215,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       {/* 1. HOME BUTTON */}
       <button 
         onClick={onNavigateHome}
-        className="fixed top-6 left-6 z-[100] flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200 px-4 py-2 rounded-full shadow-lg hover:border-amber-700 hover:text-amber-700 transition-all group"
+        className="fixed top-6 left-6 z-100 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200 px-4 py-2 rounded-full shadow-lg hover:border-amber-700 hover:text-amber-700 transition-all group"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -214,7 +225,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
       {/* 2. CART DRAWER */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-[110] overflow-hidden">
+        <div className="fixed inset-0 z-110 overflow-hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl p-6 flex flex-col">
             <div className="flex justify-between items-center mb-8">
@@ -251,8 +262,44 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                   <h3 className="text-lg font-bold text-slate-800">Delivery Details</h3>
                   <input type="text" placeholder="Full Name" className="w-full p-3 border border-slate-200 rounded-xl focus:border-amber-700 outline-none" onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})} />
                   <input type="text" placeholder="Delivery Address" className="w-full p-3 border border-slate-200 rounded-xl focus:border-amber-700 outline-none" onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})} />
-                  <div className="flex gap-2">
-                    <button onClick={() => setIsCheckout(false)} className="w-1/3 py-3 text-slate-500 font-semibold">Back</button>
+                  
+                  {/* Payment Method Selection */}
+                  <div className="pt-2">
+                    <h4 className="text-sm font-bold text-slate-700 mb-3">Payment Method</h4>
+                    <div className="flex flex-col gap-3">
+                      
+                      {/* Cash on Delivery */}
+                      <label className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-amber-700 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-amber-300'}`}>
+                        <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-amber-700 w-4 h-4" />
+                        <span className="font-medium text-slate-700 flex items-center gap-2">💵 Cash on Delivery</span>
+                      </label>
+
+                      {/* Whish Money */}
+                      <label className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'whish' ? 'border-[#e50038] bg-red-50 shadow-sm' : 'border-slate-200 hover:border-red-300'}`}>
+                        <input type="radio" name="payment" value="whish" checked={paymentMethod === 'whish'} onChange={() => setPaymentMethod('whish')} className="accent-[#e50038] w-4 h-4" />
+                        <span className="font-medium text-slate-700 flex items-center gap-2">
+                          <span className="bg-[#e50038] text-white text-[10px] font-bold px-2 py-0.5 rounded">W</span> 
+                          Whish Money
+                        </span>
+                      </label>
+
+                      {/* Whish Instructions (Only shows when Whish is selected) */}
+                      {paymentMethod === 'whish' && (
+                        <div className="bg-[#e50038]/10 border border-[#e50038]/20 p-4 rounded-xl text-sm text-slate-700 animate-slide-in-left">
+                          <p className="font-bold mb-1 text-[#e50038]">How to pay with Whish:</p>
+                          <ol className="list-decimal pl-4 space-y-1 mb-3">
+                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">3 953 615</strong></li>
+                            <li>Click "Send Order" below.</li>
+                            <li>Send us a screenshot of the transfer receipt on WhatsApp!</li>
+                          </ol>
+                        </div>
+                      )}
+
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <button onClick={() => setIsCheckout(false)} className="w-1/3 py-3 text-slate-500 font-semibold border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors">Back</button>
                     <button onClick={handleWhatsAppOrder} className="w-2/3 bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-lg shadow-green-600/20">Send Order</button>
                   </div>
                 </div>
@@ -264,7 +311,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
       {/* 3. PRODUCT DETAILS MODAL (VARIABLE SUPPORT) */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
           
           <div className="relative bg-white w-full max-w-5xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row">
@@ -289,7 +336,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                   <button
                     key={index}
                     onClick={() => setActiveImage(img.src)}
-                    className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
+                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
                       activeImage === img.src 
                       ? 'border-amber-700 shadow-md scale-95' 
                       : 'border-transparent hover:border-amber-300 opacity-70 hover:opacity-100'
@@ -366,7 +413,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       )}
 
       {/* 4. MAIN CONTENT AREA */}
-      <div className="max-w-7xl mx-auto w-full flex-grow relative z-10">
+      <div className="max-w-7xl mx-auto w-full grow relative z-10">
         
         {/* Title Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 bg-white/30 backdrop-blur-md p-8 rounded-3xl border border-white/50 shadow-xl shadow-blue-500/5">
@@ -399,7 +446,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
         {/* 6. DRAWERS (Menu & Filter) - Omitted for brevity, paste standard drawer code here */}
         {isMenuOpen && (
-          <div className="fixed inset-0 z-[130]">
+          <div className="fixed inset-0 z-130">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
             <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
               <div className="p-6 border-b flex justify-between items-center">
@@ -417,7 +464,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         )}
 
         {isFilterOpen && (
-          <div className="fixed inset-0 z-[130]">
+          <div className="fixed inset-0 z-130">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
             <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
               <div className="p-6 border-b flex justify-between items-center">
