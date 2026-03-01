@@ -446,21 +446,33 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
         {/* 6. DRAWERS (Menu & Filter) - Omitted for brevity, paste standard drawer code here */}
         {isMenuOpen && (
-          <div className="fixed inset-0 z-130">
-            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
-            <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
-              <div className="p-6 border-b flex justify-between items-center">
-                <h2 className="text-xl font-heading text-slate-800">Shop by Spirit</h2>
-                <button onClick={() => setIsMenuOpen(false)} className="text-slate-400">✕</button>
-              </div>
-              <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
-                <button onClick={() => { setSelectedCategory('all'); setIsMenuOpen(false); }} className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === 'all' ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}>All Collections</button>
+          <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
+                <button 
+                  onClick={() => { 
+                    window.history.pushState({}, '', '/shop'); // Update URL to base shop
+                    setSelectedCategory('all'); 
+                    setIsMenuOpen(false); 
+                  }} 
+                  className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === 'all' ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                >
+                  All Collections
+                </button>
+                
                 {categories.map(category => (
-                  <button key={category.id} onClick={() => { setSelectedCategory(category.id.toString()); setIsMenuOpen(false); }} className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === category.id.toString() ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}>{category.name}</button>
+                  <button 
+                    key={category.id} 
+                    onClick={() => { 
+                      const slug = category.name.toLowerCase().replace(/\s+/g, '-');
+                      window.history.pushState({}, '', `/${slug}`); // Update URL to slug
+                      setSelectedCategory(category.id.toString()); 
+                      setIsMenuOpen(false); 
+                    }} 
+                    className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === category.id.toString() ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  >
+                    {category.name}
+                  </button>
                 ))}
               </div>
-            </div>
-          </div>
         )}
 
         {isFilterOpen && (
