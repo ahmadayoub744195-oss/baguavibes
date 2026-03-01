@@ -29,10 +29,12 @@ const App: React.FC = () => {
   // --- NEW: URL ROUTING ON LOAD & BACK BUTTON ---
   useEffect(() => {
     // 1. Check URL on first load
-    const path = window.location.pathname.substring(1); // remove the '/'
-    if (path && path !== '' && path !== 'index.html') {
-      // Decode the URL (e.g., 'wind-chime' -> 'wind chime')
-      const decodedCategory = path.replace(/-/g, ' '); 
+    const path = window.location.pathname.substring(1); 
+    
+    // Check if the URL starts with 'collection/'
+    if (path.startsWith('collection/')) {
+      const categorySlug = path.replace('collection/', '');
+      const decodedCategory = categorySlug === 'all' ? 'all' : categorySlug.replace(/-/g, ' '); 
       setTargetCategory(decodedCategory);
       setCurrentPage('shop');
     }
@@ -40,11 +42,14 @@ const App: React.FC = () => {
     // 2. Listen to the browser's Back/Forward buttons
     const handlePopState = () => {
       const currentPath = window.location.pathname.substring(1);
-      if (!currentPath || currentPath === '') {
-        setCurrentPage('home');
-      } else {
-        setTargetCategory(currentPath.replace(/-/g, ' '));
+      
+      if (currentPath.startsWith('collection/')) {
+        const categorySlug = currentPath.replace('collection/', '');
+        const decodedCategory = categorySlug === 'all' ? 'all' : categorySlug.replace(/-/g, ' ');
+        setTargetCategory(decodedCategory);
         setCurrentPage('shop');
+      } else {
+        setCurrentPage('home');
       }
     };
 
@@ -82,9 +87,11 @@ const App: React.FC = () => {
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   // --- UPDATED: Changes URL when clicking a category ---
-  const navigateToShop = (category: string = 'all') => { 
-    const slug = category === 'all' ? 'shop' : category.toLowerCase().replace(/\s+/g, '-');
-    window.history.pushState({}, '', `/${slug}`); // Updates the URL bar without reloading
+   const navigateToShop = (category: string = 'all') => { 
+    const slug = category === 'all' ? 'all' : category.toLowerCase().replace(/\s+/g, '-');
+    
+    // We now use '/collection/' instead of '/shop/' to avoid the WordPress conflict
+    window.history.pushState({}, '', `/collection/${slug}`); 
     setTargetCategory(category);
     setCurrentPage('shop'); 
     setIsMenuOpen(false); 

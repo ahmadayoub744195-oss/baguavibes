@@ -449,7 +449,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
           <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
                 <button 
                   onClick={() => { 
-                    window.history.pushState({}, '', '/shop'); // Update URL to base shop
+                    window.history.pushState({}, '', '/collection'); // Update URL to base shop
                     setSelectedCategory('all'); 
                     setIsMenuOpen(false); 
                   }} 
@@ -463,7 +463,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                     key={category.id} 
                     onClick={() => { 
                       const slug = category.name.toLowerCase().replace(/\s+/g, '-');
-                      window.history.pushState({}, '', `/shop/${slug}`); // Update URL to slug
+                      window.history.pushState({}, '', `/collection/${slug}`); // Update URL to slug
                       setSelectedCategory(category.id.toString()); 
                       setIsMenuOpen(false); 
                     }} 
