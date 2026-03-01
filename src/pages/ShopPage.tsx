@@ -463,7 +463,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                     key={category.id} 
                     onClick={() => { 
                       const slug = category.name.toLowerCase().replace(/\s+/g, '-');
-                      window.history.pushState({}, '', `/${slug}`); // Update URL to slug
+                      window.history.pushState({}, '', `/shop/${slug}`); // Update URL to slug
                       setSelectedCategory(category.id.toString()); 
                       setIsMenuOpen(false); 
                     }} 
