@@ -32,7 +32,7 @@ export const WooCommerceService = {
   async getProductsByCategory(categoryId: number): Promise<Product[]> {
     try {
       // Build the URL with keys directly in the query string
-      const url = `${WC_API_URL}/products?category=${categoryId}&per_page=20&consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}`;
+      const url = `${WC_API_URL}/products?category=${categoryId}&per_page=20&consumer_key=${CONSUMER_KEY}&consumer_secret=${CONSUMER_SECRET}&per_page=100`;
 
       const response = await fetch(url);
 
