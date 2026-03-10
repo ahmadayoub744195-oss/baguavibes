@@ -21,10 +21,10 @@ const App: React.FC = () => {
     { name: "Home Energy Solutions", img: ('/home image.jpg')  },
     { name: "Incense", img: ('/incense.avif') },
     { name: "Accessories", img: ('/accessories image.webp') },
-    { name: "Baladi", img: ('/Lebanese food.jpg') }
+    { name: "Sahha Vibes", img: ('/Lebanese food.jpg') }
   ];
 
-  const menuItems = ["Keychains", "Money", "Love", "Health", "Positive Vibes", "Wind Chime", "Wallets", "Evil Eye Protection", "Home Energy Solutions", "Incense", "Accessories", "Baladi"];
+  const menuItems = ["Keychains", "Money", "Love", "Health", "Positive Vibes", "Wind Chime", "Wallets", "Evil Eye Protection", "Home Energy Solutions", "Incense", "Accessories", "Sahha Vibes"];
 
   // --- NEW: URL ROUTING ON LOAD & BACK BUTTON ---
   useEffect(() => {

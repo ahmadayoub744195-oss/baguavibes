@@ -9,7 +9,6 @@ interface ShopPageProps {
   initialCategory: string;
 }
 
-// Helper interface for Variations
 interface Variation {
   id: number;
   price: string;
@@ -37,12 +36,13 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   const [variations, setVariations] = useState<Variation[]>([]);
   const [selectedVariation, setSelectedVariation] = useState<Variation | null>(null);
   const [loadingVariations, setLoadingVariations] = useState(false);
-  const [activeImage, setActiveImage] = useState<string>(''); // For Gallery
+  const [activeImage, setActiveImage] = useState<string>(''); 
 
   // --- FILTER & INTERACTION ---
   const [maxPrice, setMaxPrice] = useState<number>(1000); 
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [customerInfo, setCustomerInfo] = useState({ name: '', address: '', phone: '' });
+  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'whish'>('cod');
 
   // --- PAGINATION CONFIG ---
   const [currentPage, setCurrentPage] = useState(1);
@@ -57,10 +57,12 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         const wcCategories = await WooCommerceService.getCategories();
         setCategories(wcCategories);
 
-        // Handle initial category from Home Page
         let categoryIdToLoad = selectedCategory;
+
         if (initialCategory && initialCategory !== 'all' && selectedCategory === 'all') {
-             const foundCat = wcCategories.find(c => c.name.toLowerCase() === initialCategory.toLowerCase());
+             let foundCat = wcCategories.find(c => c.name.toLowerCase() === initialCategory.toLowerCase());
+             if (!foundCat) foundCat = wcCategories.find(c => c.name.toLowerCase().includes(initialCategory.toLowerCase()));
+
              if (foundCat) {
                 categoryIdToLoad = foundCat.id.toString();
                 setSelectedCategory(foundCat.id.toString());
@@ -69,7 +71,6 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
         let productsData: Product[] = [];
         if (categoryIdToLoad === 'all') {
-          // Ensure WooCommerceService.ts uses per_page=100
           productsData = await WooCommerceService.getProducts();
         } else {
           productsData = await WooCommerceService.getProductsByCategory(parseInt(categoryIdToLoad));
@@ -88,31 +89,27 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   // --- VARIATION FETCH LOGIC ---
   useEffect(() => {
     if (selectedProduct) {
-      // 1. Reset states
       setActiveImage(selectedProduct.images[0]?.src || '');
       setVariations([]);
       setSelectedVariation(null);
 
-      // 2. Check if Variable
       if (selectedProduct.type === 'variable') {
         setLoadingVariations(true);
         WooCommerceService.getVariations(selectedProduct.id)
-          .then((data: Variation[]) => {
-            setVariations(data);
-          })
+          .then((data: Variation[]) => setVariations(data))
           .catch(err => console.error(err))
           .finally(() => setLoadingVariations(false));
       }
     }
   }, [selectedProduct]);
 
-  // --- FILTERING & PAGINATION ---
-  const filteredProducts = products.filter(p => {
-    const price = p.price ? parseFloat(p.price) : 0;
-    return price <= maxPrice;
-  })
-  .sort((a, b) => {
-      // This forces WooCommerce "Starred" (Featured) products to the top
+  // --- FILTERING, SORTING & PAGINATION ---
+  const filteredProducts = products
+    .filter(p => {
+      const price = p.price ? parseFloat(p.price) : 0;
+      return price <= maxPrice;
+    })
+    .sort((a, b) => {
       if (a.featured && !b.featured) return -1;
       if (!a.featured && b.featured) return 1;
       return 0;
@@ -122,7 +119,6 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   const indexOfFirstProduct = indexOfLastProduct - productsPerPage;
   const currentProducts = filteredProducts.slice(indexOfFirstProduct, indexOfLastProduct);
   const totalPages = Math.ceil(filteredProducts.length / productsPerPage);
-  const [paymentMethod, setPaymentMethod] = useState<'cod' | 'whish'>('cod');
 
   const handlePageChange = (pageNumber: number) => {
     setCurrentPage(pageNumber);
@@ -138,8 +134,6 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         alert("Please select an option first.");
         return;
       }
-      
-      // FIX: Cast this object 'as Product' to satisfy TypeScript
       const variationProduct = {
         ...selectedProduct,
         id: selectedVariation.id,
@@ -147,13 +141,11 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         price: selectedVariation.price,
         images: selectedVariation.image ? [selectedVariation.image] : selectedProduct.images
       } as Product;
-
       await addToCart(variationProduct);
     } else {
-      // Add standard product
       await addToCart(selectedProduct);
     }
-    setSelectedProduct(null); // Close modal
+    setSelectedProduct(null); 
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
@@ -189,15 +181,12 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
     window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
   };
 
-  // Combine images for Gallery (Main + Variations)
   const getAllGalleryImages = () => {
     if (!selectedProduct) return [];
     const mainImages = selectedProduct.images || [];
     const varImages = variations.map(v => v.image).filter(img => img && img.src);
-    // Filter duplicates based on src
     const combined = [...mainImages, ...varImages];
-    const unique = combined.filter((v, i, a) => a.findIndex(t => t.src === v.src) === i);
-    return unique;
+    return combined.filter((v, i, a) => a.findIndex(t => t.src === v.src) === i);
   };
 
   return (
@@ -205,11 +194,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       onMouseMove={handleMouseMove}
       className="min-h-screen pt-24 px-4 md:px-8 relative overflow-hidden flex flex-col"
       style={{
-        background: `
-          radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(180, 83, 9, 0.08), transparent 40%),
-          radial-gradient(circle at top left, #bae6fd, #ffffff 60%),
-          radial-gradient(circle at bottom right, #fca5a5, #ffffff 60%)
-        `
+        background: `radial-gradient(circle at ${mousePosition.x}% ${mousePosition.y}%, rgba(180, 83, 9, 0.08), transparent 40%), radial-gradient(circle at top left, #bae6fd, #ffffff 60%), radial-gradient(circle at bottom right, #fca5a5, #ffffff 60%)`
       }}
     >
       {/* 1. HOME BUTTON */}
@@ -263,38 +248,30 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                   <input type="text" placeholder="Full Name" className="w-full p-3 border border-slate-200 rounded-xl focus:border-amber-700 outline-none" onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})} />
                   <input type="text" placeholder="Delivery Address" className="w-full p-3 border border-slate-200 rounded-xl focus:border-amber-700 outline-none" onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})} />
                   
-                  {/* Payment Method Selection */}
                   <div className="pt-2">
                     <h4 className="text-sm font-bold text-slate-700 mb-3">Payment Method</h4>
                     <div className="flex flex-col gap-3">
-                      
-                      {/* Cash on Delivery */}
                       <label className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'cod' ? 'border-amber-700 bg-amber-50 shadow-sm' : 'border-slate-200 hover:border-amber-300'}`}>
                         <input type="radio" name="payment" value="cod" checked={paymentMethod === 'cod'} onChange={() => setPaymentMethod('cod')} className="accent-amber-700 w-4 h-4" />
                         <span className="font-medium text-slate-700 flex items-center gap-2">💵 Cash on Delivery</span>
                       </label>
-
-                      {/* Whish Money */}
                       <label className={`flex items-center gap-3 p-3 border rounded-xl cursor-pointer transition-all ${paymentMethod === 'whish' ? 'border-[#e50038] bg-red-50 shadow-sm' : 'border-slate-200 hover:border-red-300'}`}>
                         <input type="radio" name="payment" value="whish" checked={paymentMethod === 'whish'} onChange={() => setPaymentMethod('whish')} className="accent-[#e50038] w-4 h-4" />
                         <span className="font-medium text-slate-700 flex items-center gap-2">
-                          <span className="bg-[#e50038] text-white text-[10px] font-bold px-2 py-0.5 rounded">W</span> 
-                          Whish Money
+                          <span className="bg-[#e50038] text-white text-[10px] font-bold px-2 py-0.5 rounded">W</span> Whish Money
                         </span>
                       </label>
 
-                      {/* Whish Instructions (Only shows when Whish is selected) */}
                       {paymentMethod === 'whish' && (
                         <div className="bg-[#e50038]/10 border border-[#e50038]/20 p-4 rounded-xl text-sm text-slate-700 animate-slide-in-left">
                           <p className="font-bold mb-1 text-[#e50038]">How to pay with Whish:</p>
                           <ol className="list-decimal pl-4 space-y-1 mb-3">
-                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">3 953 615</strong></li>
+                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">76 744 557</strong></li>
                             <li>Click "Send Order" below.</li>
                             <li>Send us a screenshot of the transfer receipt on WhatsApp!</li>
                           </ol>
                         </div>
                       )}
-
                     </div>
                   </div>
 
@@ -309,7 +286,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         </div>
       )}
 
-      {/* 3. PRODUCT DETAILS MODAL (VARIABLE SUPPORT) */}
+      {/* 3. PRODUCT DETAILS MODAL */}
       {selectedProduct && (
         <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
@@ -317,74 +294,39 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
           <div className="relative bg-white w-full max-w-5xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row">
             <button onClick={() => setSelectedProduct(null)} className="absolute top-6 right-6 z-10 bg-white/80 backdrop-blur-sm p-2 rounded-full text-slate-400 hover:text-red-500 shadow-md transition-colors">✕ Close</button>
 
-            {/* GALLERY SECTION */}
             <div className="w-full md:w-1/2 bg-slate-50 p-6 flex flex-col gap-4">
-              {/* Main Large Image */}
               <div className="aspect-square w-full rounded-2xl overflow-hidden bg-white shadow-sm relative">
-                <img 
-                  src={activeImage || 'https://picsum.photos/600/600'} 
-                  alt={selectedProduct.name} 
-                  className="w-full h-full object-contain transition-transform duration-500" 
-                />
-                {/* Sale Badge */}
+                <img src={activeImage || 'https://picsum.photos/600/600'} alt={selectedProduct.name} className="w-full h-full object-contain transition-transform duration-500" />
                 {selectedProduct.on_sale && <span className="absolute top-4 left-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full tracking-widest">SALE</span>}
               </div>
 
-              {/* Thumbnails Row (Mixed Parent + Variations) */}
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {getAllGalleryImages().map((img, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setActiveImage(img.src)}
-                    className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${
-                      activeImage === img.src 
-                      ? 'border-amber-700 shadow-md scale-95' 
-                      : 'border-transparent hover:border-amber-300 opacity-70 hover:opacity-100'
-                    }`}
-                  >
+                  <button key={index} onClick={() => setActiveImage(img.src)} className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img.src ? 'border-amber-700 shadow-md scale-95' : 'border-transparent hover:border-amber-300 opacity-70 hover:opacity-100'}`}>
                     <img src={img.src} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* INFO SECTION */}
             <div className="w-full md:w-1/2 p-8 md:p-12 flex flex-col">
               <div className="text-xs text-amber-700 tracking-[0.3em] uppercase font-bold mb-4">{selectedProduct.categories?.map(cat => cat.name).join(', ')}</div>
-              
               <h2 className="text-3xl font-heading text-slate-800 mb-2 leading-tight">{selectedProduct.name}</h2>
-              
-              {/* Price Display: Shows Variation Price if selected, else Parent Price */}
-              <div className="text-2xl font-bold text-amber-700 mb-6">
-                ${selectedVariation ? selectedVariation.price : selectedProduct.price}
-              </div>
+              <div className="text-2xl font-bold text-amber-700 mb-6">${selectedVariation ? selectedVariation.price : selectedProduct.price}</div>
 
-              {/* VARIATION SELECTOR */}
               {selectedProduct.type === 'variable' && (
                 <div className="mb-6 bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
-                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">
-                    Choose Option:
-                  </label>
+                  <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-2">Choose Option:</label>
                   {loadingVariations ? (
                     <div className="text-sm text-slate-400 italic">Loading options...</div>
                   ) : (
-                    <select 
-                      className="w-full p-3 bg-white border border-amber-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:border-amber-700 focus:ring-1 focus:ring-amber-700"
-                      onChange={(e) => {
-                        const v = variations.find(v => v.id === parseInt(e.target.value));
-                        if (v) {
-                          setSelectedVariation(v);
-                          if (v.image?.src) setActiveImage(v.image.src);
-                        }
-                      }}
-                      value={selectedVariation?.id || ''}
-                    >
+                    <select className="w-full p-3 bg-white border border-amber-200 rounded-xl text-slate-700 font-medium focus:outline-none focus:border-amber-700" onChange={(e) => {
+                      const v = variations.find(v => v.id === parseInt(e.target.value));
+                      if (v) { setSelectedVariation(v); if (v.image?.src) setActiveImage(v.image.src); }
+                    }} value={selectedVariation?.id || ''}>
                       <option value="">Select an option</option>
                       {variations.map(v => (
-                        <option key={v.id} value={v.id}>
-                          {v.attributes.map(a => a.option).join(' / ')} 
-                          {v.price ? ` - $${v.price}` : ''}
-                        </option>
+                        <option key={v.id} value={v.id}>{v.attributes.map(a => a.option).join(' / ')} {v.price ? ` - $${v.price}` : ''}</option>
                       ))}
                     </select>
                   )}
@@ -396,15 +338,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                 <div className="text-slate-500 leading-relaxed prose prose-sm max-h-48 overflow-y-auto pr-2 custom-scrollbar" dangerouslySetInnerHTML={{ __html: selectedProduct.description || 'Energy flows where intention goes.' }} />
               </div>
 
-              <button 
-                onClick={handleAddToCart} 
-                className={`mt-8 w-full py-4 rounded-full font-bold tracking-widest transition-all shadow-lg ${
-                  selectedProduct.type === 'variable' && !selectedVariation
-                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
-                  : 'bg-amber-700 text-white hover:bg-amber-800 shadow-amber-700/20'
-                }`}
-                disabled={selectedProduct.type === 'variable' && !selectedVariation}
-              >
+              <button onClick={handleAddToCart} disabled={selectedProduct.type === 'variable' && !selectedVariation} className={`mt-8 w-full py-4 rounded-full font-bold tracking-widest transition-all shadow-lg ${selectedProduct.type === 'variable' && !selectedVariation ? 'bg-slate-300 text-slate-500 cursor-not-allowed' : 'bg-amber-700 text-white hover:bg-amber-800 shadow-amber-700/20'}`}>
                 {selectedProduct.type === 'variable' && !selectedVariation ? 'SELECT OPTION' : 'ADD TO CART'}
               </button>
             </div>
@@ -415,7 +349,6 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       {/* 4. MAIN CONTENT AREA */}
       <div className="max-w-7xl mx-auto w-full grow relative z-10">
         
-        {/* Title Section */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 bg-white/30 backdrop-blur-md p-8 rounded-3xl border border-white/50 shadow-xl shadow-blue-500/5">
           <div>
             <h1 className="text-4xl md:text-5xl font-heading text-slate-800 mb-3 drop-shadow-sm">Bagua Vibe</h1>
@@ -423,7 +356,6 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
           </div>
         </div>
 
-        {/* 5. CONTROLS */}
         <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex gap-3">
             <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-3 bg-white/80 border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm hover:border-amber-700 transition-all group">
@@ -435,54 +367,79 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
               <span className="font-semibold text-slate-700 group-hover:text-amber-700">Filter</span>
             </button>
           </div>
-
           <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-100 shadow-sm">
-            <p className="text-sm font-bold text-slate-600 uppercase tracking-wider">
-              <span className="text-amber-700 text-base mr-1">{filteredProducts.length}</span> 
-              Sacred Items
-            </p>
+            <p className="text-sm font-bold text-slate-600 uppercase tracking-wider"><span className="text-amber-700 text-base mr-1">{filteredProducts.length}</span> Sacred Items</p>
           </div>
         </div>
 
-        {/* 6. DRAWERS (Menu & Filter) - Omitted for brevity, paste standard drawer code here */}
+        {/* 6. NESTED CATEGORIES DRAWER */}
         {isMenuOpen && (
-          <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2">
+          <div className="fixed inset-0 z-130">
+            <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
+            <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
+              <div className="p-6 border-b flex justify-between items-center">
+                <h2 className="text-xl font-heading text-slate-800">Shop by Spirit</h2>
+                <button onClick={() => setIsMenuOpen(false)} className="text-slate-400">✕</button>
+              </div>
+              
+              <div className="flex-1 overflow-y-auto py-4 px-4 space-y-2 custom-scrollbar">
                 <button 
-                  onClick={() => { 
-                    window.history.pushState({}, '', '/collection'); // Update URL to base shop
-                    setSelectedCategory('all'); 
-                    setIsMenuOpen(false); 
-                  }} 
-                  className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === 'all' ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
+                  onClick={() => { window.history.pushState({}, '', '/collection/all'); setSelectedCategory('all'); setIsMenuOpen(false); }} 
+                  className={`w-full text-left px-4 py-3 rounded-xl mb-2 ${selectedCategory === 'all' ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
                 >
                   All Collections
                 </button>
                 
-                {categories.map(category => (
-                  <button 
-                    key={category.id} 
-                    onClick={() => { 
-                      const slug = category.name.toLowerCase().replace(/\s+/g, '-');
-                      window.history.pushState({}, '', `/collection/${slug}`); // Update URL to slug
-                      setSelectedCategory(category.id.toString()); 
-                      setIsMenuOpen(false); 
-                    }} 
-                    className={`w-full text-left px-4 py-3 rounded-xl ${selectedCategory === category.id.toString() ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-600 hover:bg-slate-50'}`}
-                  >
-                    {category.name}
-                  </button>
+                {/* Find Top Level Categories (Parent = 0) */}
+                {categories.filter(c => !c.parent || c.parent === 0).map(mainCat => (
+                  <div key={mainCat.id} className="mb-2">
+                    
+                    {/* Main Category Button */}
+                    <button 
+                      onClick={() => { 
+                        const slug = mainCat.name.toLowerCase().replace(/\s+/g, '-');
+                        window.history.pushState({}, '', `/collection/${slug}`); 
+                        setSelectedCategory(mainCat.id.toString()); 
+                        setIsMenuOpen(false); 
+                      }} 
+                      className={`w-full text-left px-4 py-3 rounded-xl transition-all ${selectedCategory === mainCat.id.toString() ? 'bg-amber-50 text-amber-700 font-bold border-l-4 border-amber-700' : 'text-slate-700 font-semibold hover:bg-slate-50'}`}
+                    >
+                      {mainCat.name}
+                    </button>
+                    
+                    {/* Render Subcategories if they exist */}
+                    {categories.filter(subCat => subCat.parent === mainCat.id).length > 0 && (
+                      <div className="ml-4 mt-1 border-l-2 border-slate-100 pl-2 space-y-1">
+                        {categories.filter(subCat => subCat.parent === mainCat.id).map(subCat => (
+                          <button 
+                            key={subCat.id} 
+                            onClick={() => { 
+                              const slug = subCat.name.toLowerCase().replace(/\s+/g, '-');
+                              window.history.pushState({}, '', `/collection/${slug}`); 
+                              setSelectedCategory(subCat.id.toString()); 
+                              setIsMenuOpen(false); 
+                            }} 
+                            className={`w-full text-left px-4 py-2 text-sm rounded-lg transition-all ${selectedCategory === subCat.id.toString() ? 'bg-amber-50/50 text-amber-700 font-bold' : 'text-slate-500 hover:text-amber-700 hover:bg-slate-50'}`}
+                          >
+                            ↳ {subCat.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                  </div>
                 ))}
               </div>
+
+            </div>
+          </div>
         )}
 
         {isFilterOpen && (
           <div className="fixed inset-0 z-130">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
             <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
-              <div className="p-6 border-b flex justify-between items-center">
-                <h2 className="text-xl font-heading text-slate-800">Filter</h2>
-                <button onClick={() => setIsFilterOpen(false)} className="text-slate-400">✕</button>
-              </div>
+              <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-heading text-slate-800">Filter</h2><button onClick={() => setIsFilterOpen(false)} className="text-slate-400">✕</button></div>
               <div className="p-8 space-y-6">
                 <label className="block text-sm font-semibold text-slate-600 mb-4 uppercase tracking-widest">Max Price: <span className="text-amber-700">${maxPrice}</span></label>
                 <input type="range" min="0" max="1000" step="10" value={maxPrice} onChange={(e) => setMaxPrice(parseInt(e.target.value))} className="w-full accent-amber-700" />
@@ -504,16 +461,10 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                 <ProductCard key={product.id} product={product} onAddToCart={() => setSelectedProduct(product)} onViewDetails={(p) => setSelectedProduct(p)} />
               ))}
             </div>
-
-            {/* Pagination Logic */}
             {totalPages > 1 && (
               <div className="flex flex-col md:flex-row justify-center items-center gap-4 mt-16 mb-8">
                 <div className="flex items-center gap-4">
-                  <button 
-                    disabled={currentPage === 1}
-                    onClick={() => handlePageChange(currentPage - 1)}
-                    className="p-3 rounded-full border border-slate-200 bg-white/50 text-slate-600 disabled:opacity-20 hover:border-amber-700 hover:text-amber-700 transition-all shadow-sm"
-                  >
+                  <button disabled={currentPage === 1} onClick={() => handlePageChange(currentPage - 1)} className="p-3 rounded-full border border-slate-200 bg-white/50 text-slate-600 disabled:opacity-20 hover:border-amber-700 hover:text-amber-700 transition-all shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
                   </button>
                   <div className="flex items-center gap-2">
@@ -524,25 +475,13 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                          return null;
                       }
                       return (
-                        <button
-                          key={pageNum}
-                          onClick={() => handlePageChange(pageNum)}
-                          className={`w-10 h-10 rounded-full font-bold text-sm transition-all duration-300 shadow-sm ${
-                            currentPage === pageNum 
-                            ? 'bg-amber-700 text-white shadow-amber-700/30 scale-110' 
-                            : 'bg-white/50 text-slate-400 hover:bg-white hover:text-amber-700 border border-transparent hover:border-amber-700'
-                          }`}
-                        >
+                        <button key={pageNum} onClick={() => handlePageChange(pageNum)} className={`w-10 h-10 rounded-full font-bold text-sm transition-all duration-300 shadow-sm ${currentPage === pageNum ? 'bg-amber-700 text-white shadow-amber-700/30 scale-110' : 'bg-white/50 text-slate-400 hover:bg-white hover:text-amber-700 border border-transparent hover:border-amber-700'}`}>
                           {pageNum}
                         </button>
                       );
                     })}
                   </div>
-                  <button 
-                    disabled={currentPage === totalPages}
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    className="p-3 rounded-full border border-slate-200 bg-white/50 text-slate-600 disabled:opacity-20 hover:border-amber-700 hover:text-amber-700 transition-all shadow-sm"
-                  >
+                  <button disabled={currentPage === totalPages} onClick={() => handlePageChange(currentPage + 1)} className="p-3 rounded-full border border-slate-200 bg-white/50 text-slate-600 disabled:opacity-20 hover:border-amber-700 hover:text-amber-700 transition-all shadow-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                   </button>
                 </div>
