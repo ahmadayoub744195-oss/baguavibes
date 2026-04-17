@@ -40,6 +40,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
   // --- FILTER & INTERACTION ---
   const [maxPrice, setMaxPrice] = useState<number>(1000); 
+  const [searchQuery, setSearchQuery] = useState<string>(''); // NEW: Search state
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [customerInfo, setCustomerInfo] = useState({ name: '', address: '', phone: '' });
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'whish'>('cod');
@@ -47,6 +48,11 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   // --- PAGINATION CONFIG ---
   const [currentPage, setCurrentPage] = useState(1);
   const productsPerPage = 20;
+
+  // Reset to page 1 when searching
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery]);
 
   // --- INITIAL DATA FETCH ---
   useEffect(() => {
@@ -107,7 +113,9 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
   const filteredProducts = products
     .filter(p => {
       const price = p.price ? parseFloat(p.price) : 0;
-      return price <= maxPrice;
+      const matchesPrice = price <= maxPrice;
+      const matchesSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()); // NEW: Search logic
+      return matchesPrice && matchesSearch;
     })
     .sort((a, b) => {
       if (a.featured && !b.featured) return -1;
@@ -156,6 +164,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
     });
   };
 
+  // --- UPDATED: WHATSAPP ORDER FORMATTER ---
   const handleWhatsAppOrder = () => {
     if (!customerInfo.name || !customerInfo.address) {
       alert("Please fill in your details");
@@ -166,6 +175,8 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
     ).join('%0A');
 
     const paymentText = paymentMethod === 'whish' ? 'Whish Money 🔴' : 'Cash on Delivery 💵';
+    const deliveryFee = 4.00;
+    const finalTotal = totalPrice + deliveryFee; // NEW: Added delivery to final total
 
     const message = 
       `✨ *New Order from Bagua Vibes* ✨%0A%0A` +
@@ -173,7 +184,8 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       `📍 *Address:* ${customerInfo.address}%0A` +
       `💳 *Payment:* ${paymentText}%0A%0A` +
       `🛍️ *Items:*%0A${itemsList}%0A%0A` +
-      `💰 *Total:* $${totalPrice.toFixed(2)}%0A%0A` +
+      `🚚 *Delivery:* $${deliveryFee.toFixed(2)}%0A` +
+      `💰 *Total:* $${finalTotal.toFixed(2)}%0A%0A` +
       (paymentMethod === 'whish' ? `_I will send the Whish Money transfer receipt shortly!_%0A` : '') +
       `Please confirm my order!`;
 
@@ -189,6 +201,9 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
     return combined.filter((v, i, a) => a.findIndex(t => t.src === v.src) === i);
   };
 
+  // Final Total calculation for Cart UI
+  const finalCartTotal = totalPrice + 4;
+
   return (
     <div 
       onMouseMove={handleMouseMove}
@@ -200,7 +215,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       {/* 1. HOME BUTTON */}
       <button 
         onClick={onNavigateHome}
-        className="fixed top-6 left-6 z-100 flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200 px-4 py-2 rounded-full shadow-lg hover:border-amber-700 hover:text-amber-700 transition-all group"
+        className="fixed top-6 left-6 z-[100] flex items-center gap-2 bg-white/80 backdrop-blur-md border border-slate-200 px-4 py-2 rounded-full shadow-lg hover:border-amber-700 hover:text-amber-700 transition-all group"
       >
         <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 transform group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
@@ -210,7 +225,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
       {/* 2. CART DRAWER */}
       {isCartOpen && (
-        <div className="fixed inset-0 z-110 overflow-hidden">
+        <div className="fixed inset-0 z-[110] overflow-hidden">
           <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setIsCartOpen(false)} />
           <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-2xl p-6 flex flex-col">
             <div className="flex justify-between items-center mb-8">
@@ -234,11 +249,20 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
               )}
             </div>
             <div className="border-t border-slate-100 pt-6 mt-6">
+              {/* UPDATED: Added Subtotal and Delivery lines */}
               {!isCheckout ? (
                 <>
+                  <div className="flex justify-between text-slate-500 mb-2 font-medium">
+                    <span>Subtotal:</span>
+                    <span>${totalPrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-slate-500 mb-4 font-medium border-b border-slate-100 pb-4">
+                    <span>Delivery:</span>
+                    <span>$4.00</span>
+                  </div>
                   <div className="flex justify-between text-xl font-bold mb-6 text-slate-800">
                     <span>Total:</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>${finalCartTotal.toFixed(2)}</span>
                   </div>
                   <button onClick={() => setIsCheckout(true)} className="w-full bg-amber-700 text-white py-4 rounded-full font-bold tracking-widest hover:bg-amber-800 transition-colors shadow-lg shadow-amber-700/20">PROCEED TO CHECKOUT</button>
                 </>
@@ -266,7 +290,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                         <div className="bg-[#e50038]/10 border border-[#e50038]/20 p-4 rounded-xl text-sm text-slate-700 animate-slide-in-left">
                           <p className="font-bold mb-1 text-[#e50038]">How to pay with Whish:</p>
                           <ol className="list-decimal pl-4 space-y-1 mb-3">
-                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">71 127 277</strong></li>
+                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">76 744 557</strong></li>
                             <li>Click "Send Order" below.</li>
                             <li>Send us a screenshot of the transfer receipt on WhatsApp!</li>
                           </ol>
@@ -288,7 +312,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
       {/* 3. PRODUCT DETAILS MODAL */}
       {selectedProduct && (
-        <div className="fixed inset-0 z-120 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setSelectedProduct(null)} />
           
           <div className="relative bg-white w-full max-w-5xl max-h-[95vh] overflow-y-auto rounded-[2.5rem] shadow-2xl flex flex-col md:flex-row">
@@ -302,7 +326,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
 
               <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
                 {getAllGalleryImages().map((img, index) => (
-                  <button key={index} onClick={() => setActiveImage(img.src)} className={`relative shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img.src ? 'border-amber-700 shadow-md scale-95' : 'border-transparent hover:border-amber-300 opacity-70 hover:opacity-100'}`}>
+                  <button key={index} onClick={() => setActiveImage(img.src)} className={`relative flex-shrink-0 w-20 h-20 rounded-xl overflow-hidden border-2 transition-all ${activeImage === img.src ? 'border-amber-700 shadow-md scale-95' : 'border-transparent hover:border-amber-300 opacity-70 hover:opacity-100'}`}>
                     <img src={img.src} alt={`View ${index + 1}`} className="w-full h-full object-cover" />
                   </button>
                 ))}
@@ -347,17 +371,18 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       )}
 
       {/* 4. MAIN CONTENT AREA */}
-      <div className="max-w-7xl mx-auto w-full grow relative z-10">
+      <div className="max-w-7xl mx-auto w-full flex-grow relative z-10">
         
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-12 bg-white/30 backdrop-blur-md p-8 rounded-3xl border border-white/50 shadow-xl shadow-blue-500/5">
           <div>
-            <h1 className="text-4xl md:text-5xl font-heading text-slate-800 mb-3 drop-shadow-sm">Bagua Vibe</h1>
+            <h1 className="text-4xl md:text-5xl font-heading text-slate-800 mb-3 drop-shadow-sm">Bagua Vibes Products</h1>
             <p className="text-slate-600 italic tracking-widest font-medium">Discover items for your spiritual journey</p>
           </div>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-          <div className="flex gap-3">
+        {/* 5. UPDATED: CONTROLS & SEARCH */}
+        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+          <div className="flex flex-wrap items-center justify-center gap-3 w-full md:w-auto">
             <button onClick={() => setIsMenuOpen(true)} className="flex items-center gap-3 bg-white/80 border border-slate-200 px-5 py-2.5 rounded-xl shadow-sm hover:border-amber-700 transition-all group">
               <div className="flex flex-col gap-1"><span className="w-5 h-0.5 bg-amber-700 rounded-full"></span><span className="w-5 h-0.5 bg-amber-700 rounded-full"></span><span className="w-3 h-0.5 bg-amber-700 rounded-full"></span></div>
               <span className="font-semibold text-slate-700 group-hover:text-amber-700">Categories</span>
@@ -367,14 +392,29 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
               <span className="font-semibold text-slate-700 group-hover:text-amber-700">Filter</span>
             </button>
           </div>
-          <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-100 shadow-sm">
-            <p className="text-sm font-bold text-slate-600 uppercase tracking-wider"><span className="text-amber-700 text-base mr-1">{filteredProducts.length}</span> Sacred Items</p>
+
+          {/* NEW: Search Bar */}
+          <div className="flex-1 w-full md:max-w-md relative">
+            <input 
+              type="text" 
+              placeholder="Search sacred items..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:border-amber-700 focus:ring-1 focus:ring-amber-700 outline-none shadow-sm bg-white/80 backdrop-blur-md transition-all text-slate-700 placeholder-slate-400"
+            />
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-slate-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+
+          <div className="bg-white/60 backdrop-blur-sm px-4 py-2 rounded-lg border border-slate-100 shadow-sm hidden md:block">
+            <p className="text-sm font-bold text-slate-600 uppercase tracking-wider"><span className="text-amber-700 text-base mr-1">{filteredProducts.length}</span> Items</p>
           </div>
         </div>
 
         {/* 6. NESTED CATEGORIES DRAWER */}
         {isMenuOpen && (
-          <div className="fixed inset-0 z-130">
+          <div className="fixed inset-0 z-[130]">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsMenuOpen(false)} />
             <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
               <div className="p-6 border-b flex justify-between items-center">
@@ -436,7 +476,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         )}
 
         {isFilterOpen && (
-          <div className="fixed inset-0 z-130">
+          <div className="fixed inset-0 z-[130]">
             <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
             <div className="absolute left-0 top-0 h-full w-72 bg-white shadow-2xl flex flex-col animate-slide-in-left">
               <div className="p-6 border-b flex justify-between items-center"><h2 className="text-xl font-heading text-slate-800">Filter</h2><button onClick={() => setIsFilterOpen(false)} className="text-slate-400">✕</button></div>
@@ -453,7 +493,10 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
         {loading ? (
           <div className="flex items-center justify-center h-64"><div className="w-16 h-16 border-4 border-t-amber-700 border-amber-700/20 rounded-full animate-spin"></div></div>
         ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-16"><h3 className="text-2xl font-heading text-slate-800">No Products Found</h3></div>
+          <div className="text-center py-16">
+            <h3 className="text-2xl font-heading text-slate-800 mb-2">No Products Found</h3>
+            {searchQuery && <p className="text-slate-500">We couldn't find anything matching "{searchQuery}".</p>}
+          </div>
         ) : (
           <>
             <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -502,7 +545,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
       {/* 9. FOOTER */}
       <footer className="w-full py-12 border-t border-slate-100/50 mt-auto relative z-10">
         <div className="max-w-7xl mx-auto px-4 flex flex-col items-center justify-center gap-3 text-center text-slate-500 text-sm">
-          <p>© 2026 <span className="font-heading text-slate-800">Bagua Vibes</span>. All rights reserved.</p>
+          <p>© 2026 <span className="font-heading text-slate-800">Bagua Vibes Products</span>. All rights reserved.</p>
           <p className="uppercase tracking-widest text-[10px]">Powered by <a href="https://theahmadcodes.com" target="_blank" className="text-amber-700 font-bold">theahmadcodes</a></p>
         </div>
       </footer>
