@@ -290,7 +290,7 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
                         <div className="bg-[#e50038]/10 border border-[#e50038]/20 p-4 rounded-xl text-sm text-slate-700 animate-slide-in-left">
                           <p className="font-bold mb-1 text-[#e50038]">How to pay with Whish:</p>
                           <ol className="list-decimal pl-4 space-y-1 mb-3">
-                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">76 744 557</strong></li>
+                            <li>Transfer the total amount to: <br/><strong className="text-base tracking-widest text-slate-900">71 127 277</strong></li>
                             <li>Click "Send Order" below.</li>
                             <li>Send us a screenshot of the transfer receipt on WhatsApp!</li>
                           </ol>
