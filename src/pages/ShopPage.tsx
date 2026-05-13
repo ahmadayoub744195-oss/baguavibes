@@ -164,33 +164,39 @@ const ShopPage: React.FC<ShopPageProps> = ({ onNavigateHome, initialCategory }) 
     });
   };
 
-  // --- UPDATED: WHATSAPP ORDER FORMATTER ---
+  // --- UPDATED: WHATSAPP ORDER FORMATTER (Added Image Links) ---
   const handleWhatsAppOrder = () => {
     if (!customerInfo.name || !customerInfo.address) {
       alert("Please fill in your details");
       return;
     }
+    
+    // NEW: Added the direct image link so you can see the item without logging in!
     const itemsList = cartItems.map(item => 
-      `• ${item.name} (Qty: ${item.quantity}) - $${(Number(item.price) * item.quantity).toFixed(2)}`
-    ).join('%0A');
+      `• *${item.name}*\n` +
+      `  Qty: ${item.quantity} - $${(Number(item.price) * item.quantity).toFixed(2)}\n` +
+      `  📦 Item ID: ${item.id}\n` +
+      `  🖼️ Image: ${item.images[0]?.src || 'No image'}\n`
+    ).join('\n\n'); 
 
     const paymentText = paymentMethod === 'whish' ? 'Whish Money 🔴' : 'Cash on Delivery 💵';
     const deliveryFee = 4.00;
-    const finalTotal = totalPrice + deliveryFee; // NEW: Added delivery to final total
+    const finalTotal = totalPrice + deliveryFee; 
 
     const message = 
-      `✨ *New Order from Bagua Vibes* ✨%0A%0A` +
-      `👤 *Customer:* ${customerInfo.name}%0A` +
-      `📍 *Address:* ${customerInfo.address}%0A` +
-      `💳 *Payment:* ${paymentText}%0A%0A` +
-      `🛍️ *Items:*%0A${itemsList}%0A%0A` +
-      `🚚 *Delivery:* $${deliveryFee.toFixed(2)}%0A` +
-      `💰 *Total:* $${finalTotal.toFixed(2)}%0A%0A` +
-      (paymentMethod === 'whish' ? `_I will send the Whish Money transfer receipt shortly!_%0A` : '') +
+      `✨ *New Order from Bagua Vibes* ✨\n\n` +
+      `👤 *Customer:* ${customerInfo.name}\n` +
+      `📍 *Address:* ${customerInfo.address}\n` +
+      `💳 *Payment:* ${paymentText}\n\n` +
+      `🛍️ *Items:*\n${itemsList}\n\n` +
+      `🚚 *Delivery:* $${deliveryFee.toFixed(2)}\n` +
+      `💰 *Total:* $${finalTotal.toFixed(2)}\n\n` +
+      (paymentMethod === 'whish' ? `_I will send the Whish Money transfer receipt shortly!_\n` : '') +
       `Please confirm my order!`;
 
     const whatsappNumber = "9613953615";
-    window.open(`https://wa.me/${whatsappNumber}?text=${message}`, '_blank');
+    
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
   };
 
   const getAllGalleryImages = () => {
